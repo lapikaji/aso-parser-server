@@ -287,31 +287,6 @@ app.get("/apple/shots", async (req, res) => {
         const primarySel = gridTokens.map((t) => `ul.${t}`).join(", ");
         const dialogSel = 'dialog[data-test-id="dialog"]';
 
-        const dbg = async (label) => {
-          if (!debug) return;
-          const d = await page
-            .evaluate(
-              ({ primarySel, gridTokens }) => {
-                const roots = Array.from(document.querySelectorAll(primarySel));
-                return {
-                  roots: roots.length,
-                  tokens: gridTokens,
-                  lists: roots.map((ul, i) => ({
-                    i,
-                    cls: ul.className,
-                    li: ul.querySelectorAll("li.shelf-grid__list-item").length,
-                    idx: Array.from(ul.querySelectorAll("li.shelf-grid__list-item"))
-                      .map((li) => li.getAttribute("data-index"))
-                      .filter(Boolean),
-                  })),
-                };
-              },
-              { primarySel, gridTokens }
-            )
-            .catch(() => null);
-          console.log(`[shots][${kind}] ${label}: ${JSON.stringify(d)}`);
-        };
-
         const grabOrdered = async () => {
           const items = await page.evaluate(({ gridTokens }) => {
             const roots = Array.from(document.querySelectorAll('ul[class*="shelf-grid__list--grid-type-"]')).filter((ul) =>
@@ -503,14 +478,11 @@ app.get("/apple/shots", async (req, res) => {
           await page.evaluate(() => window.scrollBy(0, 600));
           await page.waitForTimeout(200);
 
-          await dbg("after-wait");
           await grabOrdered();
 
           await pageByButtons();
-          await dbg("after-buttons");
 
           await scrollShelfToEnd();
-          await dbg("after-scroll");
 
           if (byIdx.size === 0) await sweepDialog();
         } catch (e) {
@@ -567,7 +539,7 @@ app.get("/apple/shots", async (req, res) => {
       result.total.iphone = result.iphone.length;
       result.total.ipad = result.ipad.length;
 
-      if (debug) console.log(`[shots] return iphone=${result.total.iphone} ipad=${result.total.ipad}`);
+      if (debug) console.log(`[shots] ${id} ${device} iphone=${result.total.iphone} ipad=${result.total.ipad}`);
       res.json(result);
     });
   } catch (e) {
